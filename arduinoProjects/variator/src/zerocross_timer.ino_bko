@@ -1,0 +1,91 @@
+
+#include  <TimerOne.h>          // Avaiable from http://www.arduino.cc/playground/Code/Timer1
+volatile int dimmerIndex=0;               // Variable to use as a counter volatile as it is in an interrupt
+volatile boolean zero_cross=0;  // Boolean to store a "switch" to tell us if we have crossed zero
+int freqStep = 75;    // This is the delay-per-brightness step in microseconds.
+unsigned char AC_LOAD = 13;    // Output to Opto Triac pin
+unsigned char dimming = 50;  // Dimming level [3 - 98] -> lets make it from 5 and 95 to be sure
+unsigned char i;
+String inputString = "";         // a String to hold incoming data
+boolean stringComplete = false;
+
+void setup() {
+  // put your setup code here, to run once:
+  pinMode(AC_LOAD, OUTPUT);// Set AC Load pin as output
+  pinMode(2, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(2), zero_cross_detect, RISING);
+  Timer1.initialize(freqStep);                      // Initialize TimerOne library for the freq we need
+  Timer1.attachInterrupt(dim_check, freqStep);      
+  Serial.begin(9600);
+}
+
+void zero_cross_detect() {    
+  zero_cross = true;               // set the boolean to true to tell our dimming function that a zero cross has occured
+  dimmerIndex=0;
+  if(dimming > 5){ // if not light on
+    digitalWrite(AC_LOAD, LOW);       // turn off TRIAC (and AC)
+  }
+}                                 
+// Turn on the TRIAC at the appropriate time
+void dim_check() {                   
+  if(zero_cross == true) {              
+    if(dimmerIndex >= dimming) {                     
+      if ( dimming <= 95){
+        digitalWrite(AC_LOAD, HIGH); // turn on light       
+      }
+      dimmerIndex = 0;  // reset time step counter                         
+      zero_cross = false; //reset zero cross detection
+    } 
+    else {
+      dimmerIndex++; // increment time step counter                     
+    }                                
+  }                                  
+}  
+void zero_crosss_int()  // function to be fired at the zero crossing to dim the light
+{
+  // Firing angle calculation : 1 full 50Hz wave =1/50=20ms 
+  // Every zerocrossing : (50Hz)-> 10ms (1/2 Cycle) For 60Hz (1/2 Cycle) => 8.33ms 
+  // 10ms=10000us
+  if (dimming < 5){
+    digitalWrite(AC_LOAD, HIGH);   // triac On
+  } else if (dimming > 95) {
+    digitalWrite(AC_LOAD, LOW);    // triac Off
+  } else {
+    int dimtime = (100*dimming);    // For 60Hz =>65    
+    // Replace with a timer to avoid wasting time
+    delayMicroseconds(dimtime);    // Off cycle
+    digitalWrite(AC_LOAD, HIGH);   // triac firing
+    delayMicroseconds(10);         // triac On propogation delay (for 60Hz use 8.33)
+    digitalWrite(AC_LOAD, LOW);    // triac Off
+  }
+}
+
+
+
+void loop() {
+   if (stringComplete) {
+    Serial.println("stringcomplete");
+    String input = inputString;     
+    int power = 100-input.toInt(); 
+    int step = (dimming < power ? 1 : -1);
+    for (int i = dimming; i != power;i+=step){
+      dimming=i;
+      //Serial.println("diming " + dimming);
+      delay(10);
+    }
+    dimming=power; //not needed
+    inputString = "";
+    stringComplete = false;
+  }
+
+}
+void serialEvent() {
+  while (Serial.available()) {
+    char inChar = (char)Serial.read();
+    if (inChar == '\n') {
+      stringComplete = true;
+    } else {
+      inputString += inChar;
+    }
+  }
+}

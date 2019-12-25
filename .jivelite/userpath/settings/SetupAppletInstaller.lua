@@ -1,0 +1,1 @@
+settings = {_AUTOUP=false,_LASTVER="0.1.0",}

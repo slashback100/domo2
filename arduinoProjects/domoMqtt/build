@@ -1,0 +1,22 @@
+#!/bin/bash
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+if [ "a$1" = a ]
+then
+	echo arduinoId mandatory
+	exit 1
+fi
+arduinoId=$1
+if [ ! -f src/inOutArduino_mqtt.ino ]
+then
+	echo "missing file inOutArduino_mqtt.ino"
+	exit 1
+fi
+if [[ $arduinoId =~ [0-9][A-B] ]]
+then
+	sed -Ei 's/#define ETAGE../#define ETAGE'$arduinoId'/' src/inOutArduino_mqtt.ino 
+	platformio run -v 
+else
+	echo "arduinoId should be 0A, 1A, 2A or 2B"
+	exit 1
+fi

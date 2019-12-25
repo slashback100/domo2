@@ -1,0 +1,11 @@
+{
+    "description": "avr-gcc",
+    "name": "toolchain-atmelavr",
+    "system": [
+    	"linux_armv6l",
+    	"linux_armv7l",
+    	"linux_armv8l"
+   	],
+    "url": "http://www.atmel.com/products/microcontrollers/avr/32-bitavruc3.aspx?tab=tools",
+    "version": "1.50400.0"
+}

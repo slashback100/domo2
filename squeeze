@@ -1,0 +1,2 @@
+#/bin/bash
+/home/pi/squeezelite-armv6hf -n monSalon -o hw:0 -V Digital -C 5 &

@@ -1,0 +1,50 @@
+﻿13:13:00.826 T:1847017472  NOTICE: special://profile/ is mapped to: special://masterprofile/
+13:13:00.826 T:1847017472  NOTICE: -----------------------------------------------------------------------
+13:13:00.826 T:1847017472  NOTICE: Starting Kodi from Debian (17.1 Debian package version: 2:17.1+dfsg1-3). Platform: Linux ARM 32-bit
+13:13:00.826 T:1847017472  NOTICE: Using Release Kodi from Debian x32 build
+13:13:00.826 T:1847017472  NOTICE: Kodi from Debian compiled from 2:17.1+dfsg1-3 by GCC 6.3.0 for Linux ARM 32-bit version 3.18.11 (201227)
+13:13:00.826 T:1847017472  NOTICE: Running on Raspbian GNU/Linux 9 (stretch), kernel: Linux ARM 32-bit version 4.9.41-v7+
+13:13:00.827 T:1847017472  NOTICE: FFmpeg version/source: 3.2.5-1
+13:13:00.827 T:1847017472  NOTICE: Host CPU: ARMv7 Processor rev 5 (v7l), 4 cores available
+13:13:00.827 T:1847017472  NOTICE: ARM Features: Neon disabled
+13:13:00.827 T:1847017472  NOTICE: special://xbmc/ is mapped to: /usr/share/kodi
+13:13:00.827 T:1847017472  NOTICE: special://xbmcbin/ is mapped to: /usr/lib/arm-linux-gnueabihf/kodi
+13:13:00.827 T:1847017472  NOTICE: special://xbmcbinaddons/ is mapped to: /usr/lib/arm-linux-gnueabihf/kodi/addons
+13:13:00.827 T:1847017472  NOTICE: special://masterprofile/ is mapped to: /home/pi/.kodi/userdata
+13:13:00.827 T:1847017472  NOTICE: special://envhome/ is mapped to: /home/pi
+13:13:00.827 T:1847017472  NOTICE: special://home/ is mapped to: /home/pi/.kodi
+13:13:00.827 T:1847017472  NOTICE: special://temp/ is mapped to: /home/pi/.kodi/temp
+13:13:00.827 T:1847017472  NOTICE: special://logpath/ is mapped to: /home/pi/.kodi/temp
+13:13:00.827 T:1847017472  NOTICE: The executable running is: /usr/lib/arm-linux-gnueabihf/kodi/kodi.bin
+13:13:00.827 T:1847017472  NOTICE: Local hostname: max2play
+13:13:00.827 T:1847017472  NOTICE: Log File is located: /home/pi/.kodi/temp//kodi.log
+13:13:00.828 T:1847017472  NOTICE: -----------------------------------------------------------------------
+13:13:00.840 T:1847017472   ERROR: DBus: Error org.freedesktop.DBus.Error.ServiceUnknown - The name org.freedesktop.UPower was not provided by any .service files
+13:13:00.938 T:1847017472  NOTICE: load settings...
+13:13:01.023 T:1847017472   ERROR: PulseAudio: Failed to connect context
+13:13:01.023 T:1847017472  NOTICE: PulseAudio might not be running. Context was not created.
+13:13:01.119 T:1847017472  NOTICE: Found 1 Lists of Devices
+13:13:01.119 T:1847017472  NOTICE: Enumerated ALSA devices:
+13:13:01.119 T:1847017472  NOTICE:     Device 1
+13:13:01.120 T:1847017472  NOTICE:         m_deviceName      : @
+13:13:01.120 T:1847017472  NOTICE:         m_displayName     : Default (bcm2835 ALSA bcm2835 ALSA)
+13:13:01.120 T:1847017472  NOTICE:         m_displayNameExtra:
+13:13:01.120 T:1847017472  NOTICE:         m_deviceType      : AE_DEVTYPE_PCM
+13:13:01.120 T:1847017472  NOTICE:         m_channels        : FL,FR
+13:13:01.120 T:1847017472  NOTICE:         m_sampleRates     : 8000,11025,16000,22050,32000,44100,48000
+13:13:01.120 T:1847017472  NOTICE:         m_dataFormats     : AE_FMT_S16NE,AE_FMT_S16LE,AE_FMT_U8
+13:13:01.120 T:1847017472  NOTICE:         m_streamTypes     : No passthrough capabilities
+13:13:01.138 T:1847017472  NOTICE: No settings file to load (special://xbmc/system/advancedsettings.xml)
+13:13:01.139 T:1847017472  NOTICE: No settings file to load (special://masterprofile/advancedsettings.xml)
+13:13:01.139 T:1847017472  NOTICE: Default Video Player: VideoPlayer
+13:13:01.139 T:1847017472  NOTICE: Default Audio Player: paplayer
+13:13:01.139 T:1847017472  NOTICE: Disabled debug logging due to GUI setting. Level 0.
+13:13:01.139 T:1847017472  NOTICE: Log level changed to "LOG_LEVEL_NORMAL"
+13:13:01.139 T:1847017472  NOTICE: Loading player core factory settings from special://xbmc/system/playercorefactory.xml.
+13:13:01.140 T:1847017472  NOTICE: Loaded playercorefactory configuration
+13:13:01.141 T:1847017472  NOTICE: Loading player core factory settings from special://masterprofile/playercorefactory.xml.
+13:13:01.141 T:1847017472  NOTICE: special://masterprofile/playercorefactory.xml does not exist. Skipping.
+13:13:01.174 T:1847017472  NOTICE: Running database version Addons27
+13:13:01.650 T:1847017472  NOTICE: ADDONS: Using repository repository.xbmc.org
+13:13:01.768 T:1847017472   ERROR: X11 Error: No Display found
+13:13:01.768 T:1847017472   FATAL: CApplication::Create: Unable to init windowing system

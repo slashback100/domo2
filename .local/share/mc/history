@@ -1,0 +1,9 @@
+[cmdline]
+0=
+
+[Dir Hist New Right Panel]
+0=/home/pi/.jivelite/userpath
+
+[Dir Hist New Left Panel]
+0=/home/pi/.jivelite/userpath
+1=/home/pi/.jivelite/userpath/settings
