@@ -1,10 +1,11 @@
 #include <SPI.h>                  // For networking
 #include <Ethernet.h>             // For networking
 #include <PubSubClient.h>         // For MQTT
+#include <TimerOne.h>         // For MQTT
 
 //#define DEBUG
 //#define DEBUGMQTT
-#define ETAGE0B
+#define ETAGE1A
 
 #ifdef ETAGE0A
 static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xEA };
@@ -48,20 +49,23 @@ char messBuffer[100];
 /* ------------- button management -------------------------------- */
 long lastActivityTime = 0;
 
-const int nbOutput = 13;
-const int nbInput = 32;
+const int nbOutput = 14;
+const int nbInput = 33;
 const int nbPir = 1;
-static int lastButtonState[nbInput] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-static int lastButtonLevel[nbInput] = {HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,HIGH,HIGH};
-static int buttonArray[nbInput] = {14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,45,46};
+static int lastButtonState[nbInput] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static int lastButtonLevel[nbInput] = {HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,HIGH,HIGH, HIGH};
+static int buttonArray[nbInput] = {14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,45,46,47};
 static int lastPirState[nbPir] = {0};
 static int pirArray[nbPir] = {44};
-static int outputArray[nbOutput] = {2,3,4,5,6,7,8,9,11,12,13,48,49};
+static int outputArray[nbOutput] = {1,2,3,4,5,6,7,8,9,11,12,13,48,49};
 int lastStatus = 0;
 #define DEBOUNCE_DELAY 50
+//#define WATCHDOG 21600000
+#define WATCHDOG 360000
 
-/* ------------- MQTT in and out -------------------------------- */
+/* ------------- MQTT in -------------------------------- */
 void callback(char* topic, byte* payload, unsigned int l){
+//      sendMessage("log/info/"+arduinoId, "callback");
   if(!messageReceived){
     messageReceived=true;
     receivedTopic = String(topic);
@@ -165,6 +169,34 @@ void processButtonDigital(int buttonId){
   lastButtonLevel[buttonId] = sensorReading;
 }
 void(* resetFunc) (void) = 0;
+//last time the WDT was ACKd by the application
+unsigned long lastUpdate=0;
+ 
+//time, in ms, after which a reset should be triggered
+unsigned long timeout=WATCHDOG;
+ 
+void longWDT(void)
+{
+  if((millis()-lastUpdate) > timeout)
+  {
+    //enable interrupts so serial can work
+  //#ifdef DEBUG
+    sei();
+  //#endif
+ 
+    //detach Timer1 interrupt so that if processing goes long, WDT isn't re-triggered
+    Timer1.detachInterrupt();
+ 
+    //flush, as Serial is buffered; and on hitting reset that buffer is cleared
+  #ifdef DEBUG
+    Serial.println("WDT triggered");
+    Serial.flush();
+  #endif
+ 
+    //call to bootloader / code at address 0
+    resetFunc();
+  }
+}
 /**
  * Initial configuration
  */
@@ -214,6 +246,23 @@ void setup(){
     pinMode(outputArray[i], OUTPUT);
     digitalWrite(outputArray[i], HIGH);
   }
+  /* ----------- watchdog ------------ */
+  //allow 30s without update; and seed an update
+  timeout = 30000;
+  lastUpdate=millis();
+ 
+//  timeout = 21600000;
+ /* if (!client.connected()) {
+    reconnect();
+  }
+  client.loop();  
+ */ 
+  Timer1.initialize(1000000); //1 second pulses
+  Timer1.attachInterrupt(longWDT); //code to execute
+  //sendMessage("log/debug/"+arduinoId, "Attached");
+ 
+  //long running setup code of 6 minutes (6 * 60 * 60 * 1000)
+  timeout = WATCHDOG;
 }
 
 void loop(){
@@ -237,10 +286,9 @@ void loop(){
   /* ---------- mqtt message received --------------*/
   if(messageReceived){
     // cmd/arduinoId/[in|out]/pinId
-    // todo Si réception d'un message init/arduinoId/forceInit -> flag initPhase = true et vider les hashMap
       if(receivedTopic.substring(0, ("cmd/"+arduinoId+"/out/").length()) == "cmd/"+arduinoId+"/out/"){
           int pin = receivedTopic.substring(("cmd/"+arduinoId+"/out/").length()).toInt(); //remove prefix
-          if(pin >= 2 /* 0 & 1 are for tx rx */  && pin <= 53){
+          if(pin >= 1 /* 0 & 1 are for tx rx */  && pin <= 49 /* 50 -> 53 are for SPI */){
             if(receivedPayload == "ON"){
               digitalWrite(pin, LOW);
               #ifdef DEBUG
@@ -260,9 +308,17 @@ void loop(){
             #endif
             sendCallback(receivedTopic);
           }
+     // } else if(receivedTopic.substring(0, ("cmd/"+arduinoId+"/wdg").length()) == "cmd/"+arduinoId+"/wdg"){
+     //   sendMessage("log/debug/"+arduinoId, "Reset of the watchdog");
+	//lastUpdate=millis(); 
+	//Timer1.restart();
       } else if(receivedTopic.substring(0, ("cmd/"+arduinoId+"/reset").length()) == "cmd/"+arduinoId+"/reset"){
-        sendMessage("log/debug/"+arduinoId, "Reset request received");
-	resetFunc();
+        sendMessage("log/debug/"+arduinoId, "Reset of the watchdog");
+	//Timer1.restart();
+	lastUpdate=millis(); 
+	//resetFunc();
+      } else {
+        sendMessage("log/error/"+arduinoId, receivedTopic);
       }
       messageReceived = false;
   }
