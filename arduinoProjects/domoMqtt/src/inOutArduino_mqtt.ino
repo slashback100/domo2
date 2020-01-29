@@ -110,6 +110,10 @@ void reconnect() {
       initString = "cmd/"+arduinoId+"/reset";
       initString.toCharArray(buffer, initString.length()+1);
       client.subscribe(buffer);
+
+      initString = "cmd/"+arduinoId+"/watchdog";
+      initString.toCharArray(buffer, initString.length()+1);
+      client.subscribe(buffer);
       
       sendMessage("log/info/"+arduinoId, "connected");
       sendMessage("init/"+arduinoId+"/ready", "ready");
@@ -169,6 +173,7 @@ void processButtonDigital(int buttonId){
   lastButtonLevel[buttonId] = sensorReading;
 }
 void(* resetFunc) (void) = 0;
+
 //last time the WDT was ACKd by the application
 unsigned long lastUpdate=0;
  
@@ -179,21 +184,9 @@ void longWDT(void)
 {
   if((millis()-lastUpdate) > timeout)
   {
-    //enable interrupts so serial can work
-  //#ifdef DEBUG
     sei();
-  //#endif
- 
     //detach Timer1 interrupt so that if processing goes long, WDT isn't re-triggered
     Timer1.detachInterrupt();
- 
-    //flush, as Serial is buffered; and on hitting reset that buffer is cleared
-  #ifdef DEBUG
-    Serial.println("WDT triggered");
-    Serial.flush();
-  #endif
- 
-    //call to bootloader / code at address 0
     resetFunc();
   }
 }
@@ -247,21 +240,10 @@ void setup(){
     digitalWrite(outputArray[i], HIGH);
   }
   /* ----------- watchdog ------------ */
-  //allow 30s without update; and seed an update
   timeout = 30000;
   lastUpdate=millis();
- 
-//  timeout = 21600000;
- /* if (!client.connected()) {
-    reconnect();
-  }
-  client.loop();  
- */ 
   Timer1.initialize(1000000); //1 second pulses
   Timer1.attachInterrupt(longWDT); //code to execute
-  //sendMessage("log/debug/"+arduinoId, "Attached");
- 
-  //long running setup code of 6 minutes (6 * 60 * 60 * 1000)
   timeout = WATCHDOG;
 }
 
@@ -285,10 +267,9 @@ void loop(){
   
   /* ---------- mqtt message received --------------*/
   if(messageReceived){
-    // cmd/arduinoId/[in|out]/pinId
       if(receivedTopic.substring(0, ("cmd/"+arduinoId+"/out/").length()) == "cmd/"+arduinoId+"/out/"){
           int pin = receivedTopic.substring(("cmd/"+arduinoId+"/out/").length()).toInt(); //remove prefix
-          if(pin >= 1 /* 0 & 1 are for tx rx */  && pin <= 49 /* 50 -> 53 are for SPI */){
+          if(pin >= 0 /* 0 & 1 are for tx rx */  && pin <= 49 /* 50 -> 53 are for SPI */){
             if(receivedPayload == "ON"){
               digitalWrite(pin, LOW);
               #ifdef DEBUG
@@ -308,15 +289,13 @@ void loop(){
             #endif
             sendCallback(receivedTopic);
           }
-     // } else if(receivedTopic.substring(0, ("cmd/"+arduinoId+"/wdg").length()) == "cmd/"+arduinoId+"/wdg"){
-     //   sendMessage("log/debug/"+arduinoId, "Reset of the watchdog");
-	//lastUpdate=millis(); 
+      } else if(receivedTopic.substring(0, ("cmd/"+arduinoId+"/watchdog").length()) == "cmd/"+arduinoId+"/watchdog"){
+        sendMessage("log/debug/"+arduinoId, "Reset of the watchdog");
+	lastUpdate=millis(); 
 	//Timer1.restart();
       } else if(receivedTopic.substring(0, ("cmd/"+arduinoId+"/reset").length()) == "cmd/"+arduinoId+"/reset"){
-        sendMessage("log/debug/"+arduinoId, "Reset of the watchdog");
-	//Timer1.restart();
-	lastUpdate=millis(); 
-	//resetFunc();
+        sendMessage("log/debug/"+arduinoId, "Reset of the arduino");
+	resetFunc();
       } else {
         sendMessage("log/error/"+arduinoId, receivedTopic);
       }
