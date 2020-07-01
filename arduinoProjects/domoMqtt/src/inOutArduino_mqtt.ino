@@ -5,7 +5,7 @@
 
 //#define DEBUG
 //#define DEBUGSERIAL
-#define ETAGE1A
+#define ETAGE0A
 
 #ifdef ETAGE0A
 static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xEA };
@@ -32,6 +32,12 @@ static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xF0 };
 IPAddress ip(192,168,0,204);
 String arduinoId = "etage0b";
 #endif
+
+/*-------------------------- log mngmnt ----------------------------*/
+boolean debug = false;
+void log(String level, String msg){
+    sendMessage("log/"+level+"/"+arduinoId, msg);
+}
 
 /*--------------------------- Network ------------------------------*/
 /* Network Settings */
@@ -114,8 +120,13 @@ void reconnect() {
       initString = "cmd/"+arduinoId+"/watchdog";
       initString.toCharArray(buffer, initString.length()+1);
       client.subscribe(buffer);
+
+      initString = "cmd/"+arduinoId+"/debug";
+      initString.toCharArray(buffer, initString.length()+1);
+      client.subscribe(buffer);
       
-      sendMessage("log/info/"+arduinoId, "connected");
+      //sendMessage("log/info/"+arduinoId, "connected");
+      if(debug) log("info", "connected");
       sendMessage("init/"+arduinoId+"/ready", "ready");
     } else {
       #ifdef DEBUGSERIAL
@@ -146,29 +157,14 @@ void processPir(int pirId){
 void processButtonDigital(int buttonId){
   int sensorReading = digitalRead(buttonArray[buttonId]);
   if (sensorReading != lastButtonLevel[buttonId]){
-    #ifdef DEBUG
-    sendMessage("log/info/"+arduinoId, "sensor!=lastbutton " + String(buttonId));
-    #endif
-    #ifdef DEBUGSERIAL
-    Serial.println("sensor!=lastButton");
-    #endif
+    if(debug) log("info", "sensor!=lastbutton (" + String(buttonId)+")");
     lastActivityTime = millis();
   }
   if((sensorReading == LOW && lastButtonState[buttonId] == 0) /*was high*/ ||
     (sensorReading == HIGH && lastButtonState[buttonId] == 1)) {  // potential change of state
-    #ifdef DEBUG
-    sendMessage("log/info/"+arduinoId, "pot change of state " + String(buttonId));
-    #endif
-    #ifdef DEBUGSERIAL
-    //Serial.println("change of state");
-    #endif
+    if(debug) log("info", "Change of state? (" + String(buttonId)+")");
     if((millis() - lastActivityTime) > DEBOUNCE_DELAY){  // Proceed if we haven't seen a recent event on this button
-      #ifdef DEBUGSERIAL
-      //Serial.println("> debounce delay");
-      #endif
-      #ifdef DEBUG
-      sendMessage("log/info/"+arduinoId, "above debounce_delay " + String(buttonId));
-      #endif
+      if(debug) log("info", "change of state! (" + String(buttonId)+")");
       lastActivityTime = millis();
 
       if (sensorReading == LOW) {
@@ -281,36 +277,36 @@ void loop(){
           if(pin >= 0 /* 0 & 1 are for tx rx, can be used iif serial is disabled */  && pin <= 70 /* 50 -> 53 are for SPI */){
             if(receivedPayload == "ON"){
               digitalWrite(pin, LOW);
-              #ifdef DEBUG
-              sendMessage("log/debug/"+arduinoId, "successfully treated message "+receivedTopic+" for arduino "+arduinoId+" pin "+String(pin));
-              #endif
+              if(debug) log("debug", "successfully treated message "+receivedTopic+" for arduino "+arduinoId+" pin "+String(pin));
             } else if(receivedPayload == "OFF"){
               digitalWrite(pin, HIGH);
-              #ifdef DEBUG
-              sendMessage("log/debug/"+arduinoId, "successfully treated message "+receivedTopic+" for arduino "+arduinoId+" pin "+String(pin));
-              #endif
+              if(debug) log("debug", "successfully treated message "+receivedTopic+" for arduino "+arduinoId+" pin "+String(pin));
             } else {
-              sendMessage("log/error/"+arduinoId, "failed to treat message "+receivedTopic+" for arduino "+arduinoId+" pin "+String(pin)+" message "+receivedPayload);
+              log("error", "failed to treat message "+receivedTopic+" for arduino "+arduinoId+" pin "+String(pin)+" message "+receivedPayload);
             }
-            #ifdef DEBUG
-            sendMessage("log/cmd",receivedTopic);
-            sendMessage("log/pin",String(pin));
-            #endif
+            if(debug){
+                log("debug", "cmd: "+receivedTopic);
+                log("debug", "pin: "+String(pin));
+            }
             sendCallback(receivedTopic);
           }
       } else if(receivedTopic.substring(0, ("cmd/"+arduinoId+"/watchdog").length()) == "cmd/"+arduinoId+"/watchdog"){
-        #ifdef DEBUG
-        sendMessage("log/debug/"+arduinoId, "Reset of the watchdog");
-        #endif
+        if(debug) log("debug", "Reset of the watchdog");
 	lastUpdate=millis(); 
 	//Timer1.restart();
       } else if(receivedTopic.substring(0, ("cmd/"+arduinoId+"/reset").length()) == "cmd/"+arduinoId+"/reset"){
-        #ifdef DEBUG
-        sendMessage("log/debug/"+arduinoId, "Reset of the arduino");
-        #endif
+        if(debug) log("debug", "Reset of the arduino");
 	resetFunc();
+      } else if(receivedTopic.substring(0, ("cmd/"+arduinoId+"/debug").length()) == "cmd/"+arduinoId+"/debug"){
+        if(receivedPayload == "true" || receivedPayload == "1" || receivedPayload == "ON" || receivedPayload == "TRUE"){
+          debug=true;
+	  log("info", "Log mode activated");
+        } else {
+          debug=false;
+	  log("info", "Log mode desactivated");
+        }
       } else {
-        sendMessage("log/error/"+arduinoId, receivedTopic);
+        log("error", receivedTopic);
       }
       messageReceived = false;
   }
