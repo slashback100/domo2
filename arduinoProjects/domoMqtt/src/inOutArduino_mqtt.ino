@@ -71,7 +71,6 @@ int lastStatus = 0;
 
 /* ------------- MQTT in -------------------------------- */
 void callback(char* topic, byte* payload, unsigned int l){
-//      sendMessage("log/info/"+arduinoId, "callback");
   if(!messageReceived){
     messageReceived=true;
     receivedTopic = String(topic);
@@ -164,7 +163,7 @@ void processButtonDigital(int buttonId){
     (sensorReading == HIGH && lastButtonState[buttonId] == 1)) {  // potential change of state
     if(debug) log("info", "Change of state? (" + String(buttonId)+")");
     if((millis() - lastActivityTime) > DEBOUNCE_DELAY){  // Proceed if we haven't seen a recent event on this button
-      if(debug) log("info", "change of state! (" + String(buttonId)+")");
+      if(debug) log("info", "Change of state! (" + String(buttonId)+")");
       lastActivityTime = millis();
 
       if (sensorReading == LOW) {
