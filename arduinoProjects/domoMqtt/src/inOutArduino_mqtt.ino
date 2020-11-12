@@ -8,9 +8,12 @@
 #define ETAGE0A
 
 #ifdef ETAGE0A
+#define VARIATOR
+#include <Wire.h>
 static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xEA };
 IPAddress ip(192,168,0,203);
 String arduinoId = "etage0a";
+volatile int val; // variable used by master to send data to slave
 #endif
 #ifdef ETAGE1A
 static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
@@ -198,6 +201,10 @@ void longWDT(void)
  * Initial configuration
  */
 void setup(){
+  /* **** I2C ****/
+#ifdef VARIATOR
+  Wire.begin ();
+#endif
   /* -------------- network ------------------- */
   #ifdef DEBUGSERIAL
   Serial.begin(9600); 
@@ -280,8 +287,31 @@ void loop(){
             } else if(receivedPayload == "OFF"){
               digitalWrite(pin, HIGH);
               if(debug) log("debug", "successfully treated message "+receivedTopic+" for arduino "+arduinoId+" pin "+String(pin));
+#ifdef VARIATOR
+            } else if(receivedPayload == "VON"){
+              Wire.beginTransmission (9);
+              Wire.write (250); // 250 for on, 200 for off
+              Wire.endTransmission ();
+              if(debug) log("debug", "successfully treated message "+receivedTopic+" for arduino "+arduinoId+" pin "+String(pin));
+            } else if(receivedPayload == "VOF"){
+              Wire.beginTransmission (9);
+              Wire.write (200); // 250 for on, 200 for off
+              Wire.endTransmission ();
+              if(debug) log("debug", "successfully treated message "+receivedTopic+" for arduino "+arduinoId+" pin "+String(pin));
+#endif
             } else {
+              //means it is a percentage, to send in I2C
+#ifdef VARIATOR
+              val = receivedPayload.toInt();
+              if(debug) log("debug", "Percentage received "+String(val));
+              Wire.beginTransmission (9);
+              Wire.write (val);
+              Wire.endTransmission ();
+              if(debug) log("debug", "successfully treated message "+receivedTopic+" for arduino "+arduinoId+" pin "+String(pin));
+#else
               log("error", "failed to treat message "+receivedTopic+" for arduino "+arduinoId+" pin "+String(pin)+" message "+receivedPayload);
+#endif
+              
             }
             if(debug){
                 log("debug", "cmd: "+receivedTopic);
