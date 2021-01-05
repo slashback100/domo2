@@ -3,17 +3,18 @@
 #include <PubSubClient.h>         // For MQTT
 #include <TimerOne.h>             // For Watchdog
 
-//#define DEBUG
-//#define DEBUGSERIAL
-#define ETAGE0A
-
-#ifdef ETAGE0A
 #define VARIATOR
 #include <Wire.h>
+volatile int val; // variable used by master to send data to slave
+
+//#define DEBUG
+//#define DEBUGSERIAL
+#define ETAGE1A
+
+#ifdef ETAGE0A
 static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xEA };
 IPAddress ip(192,168,0,203);
 String arduinoId = "etage0a";
-volatile int val; // variable used by master to send data to slave
 #endif
 #ifdef ETAGE1A
 static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
@@ -29,11 +30,6 @@ String arduinoId = "etage2a";
 static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xEF };
 IPAddress ip(192,168,0,202);
 String arduinoId = "etage2b";
-#endif
-#ifdef ETAGE0B
-static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xF0 };
-IPAddress ip(192,168,0,204);
-String arduinoId = "etage0b";
 #endif
 
 /*-------------------------- log mngmnt ----------------------------*/
@@ -59,11 +55,11 @@ char messBuffer[100];
 long lastActivityTime = 0;
 
 const int nbOutput = 16;
-const int nbInput = 39;
+const int nbInput = 40;
 const int nbPir = 1;
-static int lastButtonState[nbInput] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0,0,0,0,0,0};
-static int lastButtonLevel[nbInput] = {HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,HIGH,HIGH, HIGH, HIGH,HIGH,HIGH,HIGH,HIGH,HIGH};
-static int buttonArray[nbInput] = {14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,45,46,47,A0,A1,A2,A3,A4,A5};
+static int lastButtonState[nbInput] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0,0,0,0,0,0,0,0,0};
+static int lastButtonLevel[nbInput] = {HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,HIGH,HIGH, HIGH, HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH};
+static int buttonArray[nbInput] = {14,15,16,17,18,19,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,45,46,47,A0,A1,A2,A3,A4,A5,A7,A8,A9};//20 & 21 are for Wire
 static int lastPirState[nbPir] = {0};
 static int pirArray[nbPir] = {44};
 static int outputArray[nbOutput] = {1,2,3,4,5,6,7,8,9,11,12,13,48,49,A14,A15};
@@ -290,12 +286,14 @@ void loop(){
 #ifdef VARIATOR
             } else if(receivedPayload == "VON"){
               Wire.beginTransmission (9);
-              Wire.write (250); // 250 for on, 200 for off
+              Wire.write(pin);
+              Wire.write(250); // 250 for on, 200 for off
               Wire.endTransmission ();
               if(debug) log("debug", "successfully treated message "+receivedTopic+" for arduino "+arduinoId+" pin "+String(pin));
             } else if(receivedPayload == "VOF"){
               Wire.beginTransmission (9);
-              Wire.write (200); // 250 for on, 200 for off
+              Wire.write(pin);
+              Wire.write(200); // 250 for on, 200 for off
               Wire.endTransmission ();
               if(debug) log("debug", "successfully treated message "+receivedTopic+" for arduino "+arduinoId+" pin "+String(pin));
 #endif
@@ -305,7 +303,8 @@ void loop(){
               val = receivedPayload.toInt();
               if(debug) log("debug", "Percentage received "+String(val));
               Wire.beginTransmission (9);
-              Wire.write (val);
+              Wire.write(pin);
+              Wire.write(val);
               Wire.endTransmission ();
               if(debug) log("debug", "successfully treated message "+receivedTopic+" for arduino "+arduinoId+" pin "+String(pin));
 #else
