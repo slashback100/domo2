@@ -2,12 +2,9 @@
 #include <Ethernet.h>             // For networking
 #include <PubSubClient.h>         // For MQTT
 #include <TimerOne.h>             // For Watchdog
+#include <Wire.h>	          // For I2C (variator)
 
-#define VARIATOR
-#include <Wire.h>
-volatile int val; // variable used by master to send data to slave
 
-//#define DEBUG
 //#define DEBUGSERIAL
 #define ETAGE1A
 
@@ -31,6 +28,9 @@ static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xEF };
 IPAddress ip(192,168,0,202);
 String arduinoId = "etage2b";
 #endif
+
+/*--------------------------- Variator -----------------------------*/
+volatile int val; // variable used by master to send data to slave
 
 /*-------------------------- log mngmnt ----------------------------*/
 boolean debug = false;
@@ -56,17 +56,16 @@ long lastActivityTime = 0;
 
 const int nbOutput = 16;
 const int nbInput = 40;
-const int nbPir = 1;
+const int nbPir = 0;
 static int lastButtonState[nbInput] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0,0,0,0,0,0,0,0,0};
 static int lastButtonLevel[nbInput] = {HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,HIGH,HIGH, HIGH, HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH};
-static int buttonArray[nbInput] = {14,15,16,17,18,19,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,45,46,47,A0,A1,A2,A3,A4,A5,A7,A8,A9};//20 & 21 are for Wire
-static int lastPirState[nbPir] = {0};
-static int pirArray[nbPir] = {44};
+static int buttonArray[nbInput] = {14,15,16,17,18,19,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,45,46,47,A0,A1,A2,A3,A4,A5,A7,A8,A9};//20 & 21 are for i2c (SDL & SDA)
+static int lastPirState[nbPir]; // = {0};
+static int pirArray[nbPir]; // = {44};
 static int outputArray[nbOutput] = {1,2,3,4,5,6,7,8,9,11,12,13,48,49,A14,A15};
 int lastStatus = 0;
-#define DEBOUNCE_DELAY 50
-//#define WATCHDOG 21600000
-#define WATCHDOG 360000
+#define DEBOUNCE_DELAY 50 // button push delay
+#define WATCHDOG 360000 // 6min
 
 /* ------------- MQTT in -------------------------------- */
 void callback(char* topic, byte* payload, unsigned int l){
@@ -187,7 +186,7 @@ void longWDT(void)
 {
   if((millis()-lastUpdate) > timeout)
   {
-    sei();
+    sei(); // activate interruptions
     //detach Timer1 interrupt so that if processing goes long, WDT isn't re-triggered
     Timer1.detachInterrupt();
     resetFunc();
@@ -197,10 +196,8 @@ void longWDT(void)
  * Initial configuration
  */
 void setup(){
-  /* **** I2C ****/
-#ifdef VARIATOR
+  /* ----------- I2C --------*/
   Wire.begin ();
-#endif
   /* -------------- network ------------------- */
   #ifdef DEBUGSERIAL
   Serial.begin(9600); 
@@ -247,7 +244,6 @@ void setup(){
     digitalWrite(outputArray[i], HIGH);
   }
   /* ----------- watchdog ------------ */
-  timeout = 30000;
   lastUpdate=millis();
   Timer1.initialize(1000000); //1 second pulses
   Timer1.attachInterrupt(longWDT); //code to execute
@@ -268,9 +264,9 @@ void loop(){
   }
 
   /* ---------------- pir pins -------------------*/
-  /*for(int i = 0; i < nbPir; i++) {
+  for(int i = 0; i < nbPir; i++) {
       processPir(i);
-  }*/
+  }
   
   /* ---------- mqtt message received --------------*/
   if(messageReceived){
@@ -283,7 +279,6 @@ void loop(){
             } else if(receivedPayload == "OFF"){
               digitalWrite(pin, HIGH);
               if(debug) log("debug", "successfully treated message "+receivedTopic+" for arduino "+arduinoId+" pin "+String(pin));
-#ifdef VARIATOR
             } else if(receivedPayload == "VON"){
               Wire.beginTransmission (9);
               Wire.write(pin);
@@ -296,10 +291,8 @@ void loop(){
               Wire.write(200); // 250 for on, 200 for off
               Wire.endTransmission ();
               if(debug) log("debug", "successfully treated message "+receivedTopic+" for arduino "+arduinoId+" pin "+String(pin));
-#endif
             } else {
               //means it is a percentage, to send in I2C
-#ifdef VARIATOR
               val = receivedPayload.toInt();
               if(debug) log("debug", "Percentage received "+String(val));
               Wire.beginTransmission (9);
@@ -307,10 +300,6 @@ void loop(){
               Wire.write(val);
               Wire.endTransmission ();
               if(debug) log("debug", "successfully treated message "+receivedTopic+" for arduino "+arduinoId+" pin "+String(pin));
-#else
-              log("error", "failed to treat message "+receivedTopic+" for arduino "+arduinoId+" pin "+String(pin)+" message "+receivedPayload);
-#endif
-              
             }
             if(debug){
                 log("debug", "cmd: "+receivedTopic);
