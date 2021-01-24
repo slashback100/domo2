@@ -1,3 +1,14 @@
+####################################################################
+#  HC-SR04  <->   NodeMCU
+#  Vcc   -------- VV (5v)
+#  Trig  -------- D1
+#  Echo  -------- D3
+#  Gnd   -------- Gnd
+#
+####################################################################
+
+
+
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
@@ -10,7 +21,29 @@ const char* password = "wj7ds232pajmn";
 const char* mqtt_server = "192.168.0.186";
 const char* mqtt_username = "slashback";
 const char* mqtt_password = "nimda";
-const char* clientID = "esp_garage_mel_dist";
+
+//#define mel
+#define chris
+
+#ifdef mel
+#define HOSTNAME "EspGarageMelDistance"
+#define TOPIC "esp_garage_mel_dist"
+#endif
+
+#ifdef chris
+#define HOSTNAME "EspGarageChrisDistance"
+#define TOPIC "esp_garage_christ_dist"
+#endif
+
+#define ACTIVATE_TOPIC "cmd/" TOPIC "/activate"
+#define READY_TOPIC "init/" TOPIC "/ready"
+#define MAIN_TOPIC "cmd/" TOPIC "/distance"
+
+#define INFO_TOPIC "log/info/" TOPIC
+#define DEBUG_TOPIC "log/debug/" TOPIC
+#define ERROR_TOPIC "log/error/" TOPIC
+
+const char* clientID = TOPIC;
 const int trigPin = 5; // D1
 const int echoPin = 4; // D2
 long duration;
@@ -50,7 +83,7 @@ void mqtt(){
   }
   
   client.setCallback(subscribeReceive);
-  client.subscribe("cmd/esp_garage_mel_dist/activate");
+  client.subscribe(ACTIVATE_TOPIC);
   
   client.loop();
   delay(100);
@@ -62,9 +95,9 @@ void setup() {
   pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
   pinMode(echoPin, INPUT); // Sets the echoPin as an Input
   connect();
-  client.publish("log/info/esp_garage_mel_dist", "connected");
+  client.publish(INFO_TOPIC, "connected");
   
-  ArduinoOTA.setHostname("EspGarageDistance");
+  ArduinoOTA.setHostname(HOSTNAME);
   ArduinoOTA.onStart([]() {
     String type;
     if (ArduinoOTA.getCommand() == U_FLASH) {
@@ -77,22 +110,24 @@ void setup() {
   ArduinoOTA.begin();
   starttime = millis();
   
-  client.publish("init/esp_garage_mel_dist/ready", "ready");
+  client.publish(READY_TOPIC, "ready");
 }
 
 void subscribeReceive(char* topic, byte* payload, unsigned int length){
   // Print the message
   activate = char(payload[0]);
-  if(activate == '1')
-    client.publish("log/debug/esp_garage_mel_dist", "Activated");
-   else
-    client.publish("log/debug/esp_garage_mel_dist", "Disactivated");
+  if(activate == '1'){
+    client.publish(DEBUG_TOPIC , "Activated");
+    distance = 0; // to force a resend even if oldDistance == distance
+  } else {
+    client.publish(DEBUG_TOPIC, "Disactivated");
+  }
 }
 
 void loop() {
   if(WiFi.status() != WL_CONNECTED){
     reconnect();
-    client.publish("log/error/esp_garage_mel_dist", "Mqtt reconnected.");
+    client.publish(ERROR_TOPIC, "Mqtt reconnected.");
   }
   if(!client.connected()){
     mqtt();
@@ -105,12 +140,17 @@ void loop() {
 
 void doTheJob(){
  if(activate == '1'){
+    int oldDistance;
+    oldDistance = distance;
     readDistance();
-    client.publish("cmd/esp_garage_mel_dist/distance", String(distance).c_str());
+    if(distance != oldDistance && distance <= 2000){ // send >= 2060 if no feedback is detected
+    //if(distance <= 2000){ // send >= 2060 if no feedback is detected
+      client.publish(MAIN_TOPIC, String(distance).c_str());
+    }
     delay(100);
   } 
   if(starttime + 1000 * 300 <= millis()){ //30 s
-    client.publish("log/debug/esp_garage_mel_dist", "I am alive");
+    client.publish(DEBUG_TOPIC, "I am alive");
     starttime = millis();
   }
 }
