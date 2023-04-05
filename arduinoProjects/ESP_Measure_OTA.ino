@@ -15,11 +15,11 @@
 #include <ArduinoOTA.h>
 #include "PubSubClient.h" // Allows us to connect to, and publish to the MQTT broker
 
-const char* ssid = "wifi_network";
+const char* ssid = "******";
 const char* password = "******";
 
-const char* mqtt_server = "192.168.0.186";
-const char* mqtt_username = "slashback";
+const char* mqtt_server = "192.168.0.x";
+const char* mqtt_username = "******";
 const char* mqtt_password = "******";
 
 //#define mel
