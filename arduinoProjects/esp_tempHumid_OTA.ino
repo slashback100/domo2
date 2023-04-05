@@ -6,13 +6,13 @@
 
 #define DHTTYPE DHT11 
 
-const char* ssid = "wifi_network";
+const char* ssid = "********";
 const char* password =  "********";
 
-const char* mqttServer = "192.168.0.186";
+const char* mqttServer = "192.168.0.x";
 const int mqttPort = 1883;
-const char* mqtt_username = "slashback";
-const char* mqtt_password = "nimda";
+const char* mqtt_username = "******";
+const char* mqtt_password = "******";
 const char* clientID = "esp_sport_tempHumid";
 
 #define cinema
