@@ -16,7 +16,7 @@
 #include "PubSubClient.h" // Allows us to connect to, and publish to the MQTT broker
 
 const char* ssid = "wifi_network";
-const char* password = "wj7ds232pajmn";
+const char* password = "******";
 
 const char* mqtt_server = "192.168.0.186";
 const char* mqtt_username = "slashback";
