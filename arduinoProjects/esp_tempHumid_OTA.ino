@@ -7,7 +7,7 @@
 #define DHTTYPE DHT11 
 
 const char* ssid = "wifi_network";
-const char* password =  "wj7ds232pajmn";
+const char* password =  "********";
 
 const char* mqttServer = "192.168.0.186";
 const int mqttPort = 1883;
