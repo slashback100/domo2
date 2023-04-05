@@ -20,7 +20,7 @@ const char* password = "******";
 
 const char* mqtt_server = "192.168.0.186";
 const char* mqtt_username = "slashback";
-const char* mqtt_password = "nimda";
+const char* mqtt_password = "******";
 
 //#define mel
 #define chris
